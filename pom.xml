@@ -327,6 +327,7 @@
             <artifactId>jcl-over-slf4j</artifactId>
             <version>1.7.19</version>
         </dependency>
+
         </dependencies>
     </dependencyManagement>
 
