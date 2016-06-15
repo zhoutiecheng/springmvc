@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 /**
  * Created by zhoutc on 2016/4/27.
  */
-@Service
+@Service("testapi1")
 public class TestApiImpl implements TestApi {
 
     @Value("${test_say_world}")
@@ -18,7 +18,7 @@ public class TestApiImpl implements TestApi {
      */
     @Override
     public void sayHello() {
-
+        System.out.println("hello");
         return;
     }
 }
