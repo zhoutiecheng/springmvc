@@ -42,11 +42,11 @@ public final class FastHttpUtils {
 	}
 
 	public static CloseableHttpAsyncClient getClient(int connectTimeout) {
-		RequestConfig requestConfig = 
+		RequestConfig requestConfig =
 				RequestConfig
-				.custom()
-				.setConnectTimeout(connectTimeout)// 请求超时
-				.build();
+						.custom()
+						.setConnectTimeout(connectTimeout)// 请求超时
+						.build();
 		return HttpAsyncClients.custom().setMaxConnPerRoute(1000).setDefaultRequestConfig(requestConfig).build();
 	}
 
@@ -70,7 +70,7 @@ public final class FastHttpUtils {
 	}
 
 	public static HttpCallbackHandler<String> executeReturnStringHandler(CloseableHttpAsyncClient client,
-			HttpGet httpGet) {
+																		 HttpGet httpGet) {
 		// 不要自己关闭
 		HttpCallbackHandler<String> callbackHandler = new HttpCallbackHandler<String>();
 		try {
@@ -94,8 +94,8 @@ public final class FastHttpUtils {
 	 * @throws UnsupportedEncodingException
 	 */
 	public static String executeHttpGetReturnString(final CloseableHttpAsyncClient client, HttpGet httpGet,
-			final String encoding, final IHttpCallbackHandler<String> handler, boolean closeClient)
-					throws UnsupportedEncodingException {
+													final String encoding, final IHttpCallbackHandler<String> handler, boolean closeClient)
+			throws UnsupportedEncodingException {
 		Args.notNull(client, "CloseableHttpAsyncClient not be null!");
 		Args.notNull(handler, "callback handler must be set!");
 		// 自动关闭HTTP的TCP设置,对于自己的服务器一定要加,否则服务端会产生大量TCP_CLOSEWAIT
@@ -179,7 +179,7 @@ public final class FastHttpUtils {
 	 * @return
 	 */
 	public static HttpCallbackHandler<String> executeReturnStringHandler(CloseableHttpAsyncClient client,
-			HttpPost httpPost) {
+																		 HttpPost httpPost) {
 		HttpCallbackHandler<String> callbackHandler = new HttpCallbackHandler<String>();
 		try {
 			executeHttpPostReturnString(client, httpPost, null, FastHttpUtils.FASTHTTP_DEFAULT_ENCODE, callbackHandler,
@@ -197,8 +197,28 @@ public final class FastHttpUtils {
 	 * @param httpPost
 	 * @return
 	 */
+	public static HttpCallbackHandler<String> executeMultiReturnStringHandler(CloseableHttpAsyncClient client,
+																			  HttpPost httpPost) {
+		HttpCallbackHandler<String> callbackHandler = new HttpCallbackHandler<String>();
+		try {
+			executeHttpMultiPostReturnString(client, httpPost, null, FastHttpUtils.FASTHTTP_DEFAULT_ENCODE, callbackHandler,
+					false);
+		} catch (UnsupportedEncodingException e) {
+			throw new RuntimeException(e);
+		}
+		return callbackHandler;
+	}
+
+
+	/**
+	 * 外部关闭client,post
+	 *
+	 * @param client
+	 * @param httpPost
+	 * @return
+	 */
 	public static HttpCallbackHandler<String> executeReturnStringHandler(CloseableHttpAsyncClient client,
-			HttpPost httpPost, Map<String, String> params) {
+																		 HttpPost httpPost, Map<String, String> params) {
 		HttpCallbackHandler<String> callbackHandler = new HttpCallbackHandler<String>();
 		try {
 			executeHttpPostReturnString(client, httpPost, params, FastHttpUtils.FASTHTTP_DEFAULT_ENCODE,
@@ -219,7 +239,7 @@ public final class FastHttpUtils {
 	 * @return
 	 */
 	public static String executeReturnString(CloseableHttpAsyncClient client, HttpPost httpPost,
-			Map<String, String> params) {
+											 Map<String, String> params) {
 		HttpCallbackHandler<String> callbackHandler = new HttpCallbackHandler<String>();
 		try {
 			executeHttpPostReturnString(client, httpPost, params, FastHttpUtils.FASTHTTP_DEFAULT_ENCODE,
@@ -274,7 +294,7 @@ public final class FastHttpUtils {
 	 * @throws UnsupportedEncodingException
 	 */
 	public static String executePostReturnString(CloseableHttpAsyncClient client, String url,
-			Map<String, String> params) throws UnsupportedEncodingException {
+												 Map<String, String> params) throws UnsupportedEncodingException {
 		HttpPost post2 = new FastHttpPost(url).build();
 		return FastHttpUtils.executeReturnStringHandler(client, post2, params).get();
 	}
@@ -296,8 +316,8 @@ public final class FastHttpUtils {
 	 * @throws UnsupportedEncodingException
 	 */
 	public static String executeHttpPostReturnString(final CloseableHttpAsyncClient client, HttpPost httpPost,
-			Map<String, String> param, final String encoding, final IHttpCallbackHandler<String> handler,
-			boolean closeClient) throws UnsupportedEncodingException {
+													 Map<String, String> param, final String encoding, final IHttpCallbackHandler<String> handler,
+													 boolean closeClient) throws UnsupportedEncodingException {
 		Args.notNull(client, "CloseableHttpAsyncClient not be null!");
 		Args.notNull(httpPost, "httpPost not be null!");
 		Args.notBlank(encoding, "encoding must be set!");
@@ -372,6 +392,90 @@ public final class FastHttpUtils {
 		return handler.get();
 	}
 
+
+	/**
+	 * POST请求得到String的结果
+	 *
+	 * @param client
+	 *            请求客户端
+	 * @param httpPost
+	 *            请求对象
+	 * @param param
+	 *            参数
+	 * @param encoding
+	 *            请求结果转为字符串时的编码
+	 * @param handler
+	 *            回调
+	 * @return
+	 * @throws UnsupportedEncodingException
+	 */
+	public static String executeHttpMultiPostReturnString(final CloseableHttpAsyncClient client, HttpPost httpPost,
+														  Map<String, String> param, final String encoding, final IHttpCallbackHandler<String> handler,
+														  boolean closeClient) throws UnsupportedEncodingException {
+		Args.notNull(client, "CloseableHttpAsyncClient not be null!");
+		Args.notNull(httpPost, "httpPost not be null!");
+		Args.notBlank(encoding, "encoding must be set!");
+		Args.notNull(handler, "callback handler must be set!");
+		// 通知服务器自动关闭HTTP的TCP设置,对于自己的服务器一定要加,否则服务端会产生大量TCP_CLOSEWAIT
+		httpPost.setHeader("Connection", "close");// 即使加了这个参数,大量并发下客户端也会产生大量TIME_WAIT,需要调一些*inux系统参数
+		httpPost.setHeader("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT; DigExt)");
+		try {
+			// 重要
+			handler.setHttpRequestConnection(httpPost);
+
+			client.start();
+			// 执行请求操作并设置结果
+			client.execute(httpPost, new FutureCallback<HttpResponse>() {
+				@Override
+				public void failed(Exception ex) {
+					handler.failed(ex);
+				}
+
+				//
+				@Override
+				public void completed(HttpResponse resp) {
+					HttpEntity responseEntity = resp.getEntity();
+					int statusCode = resp.getStatusLine().getStatusCode();
+					String body = "";
+					try {
+						if (responseEntity != null) {
+
+							final InputStream instream = responseEntity.getContent();
+							try {
+								final StringBuilder sb = new StringBuilder();
+								final char[] tmp = new char[1024];
+								final Reader reader = new InputStreamReader(instream, encoding);
+								int l;
+								while ((l = reader.read(tmp)) != -1) {
+									sb.append(tmp, 0, l);
+								}
+								body = sb.toString();
+							} finally {
+								instream.close();
+								EntityUtils.consume(responseEntity);
+							}
+						}
+						handler.completed(statusCode, body);
+					} catch (ParseException | IOException e) {
+						handler.failed(e);
+					}
+				}
+
+				//
+				@Override
+				public void cancelled() {
+					handler.cancelled();
+				}
+			});
+		} finally {
+			if (closeClient) {
+				close(client);
+			}
+		}
+
+		return handler.get();
+	}
+
 	/**
 	 * 提交POST请求得到String的结果,要在外面自己调用CloseableHttpAsyncClient的close()
 	 *
@@ -387,7 +491,7 @@ public final class FastHttpUtils {
 	 * @throws UnsupportedEncodingException
 	 */
 	public static String executeAsString(final CloseableHttpAsyncClient client, HttpPost httpPost,
-			final String encoding, final IHttpCallbackHandler<String> handler) throws UnsupportedEncodingException {
+										 final String encoding, final IHttpCallbackHandler<String> handler) throws UnsupportedEncodingException {
 		return executeHttpPostReturnString(client, httpPost, null, encoding, handler, false);
 	}
 

@@ -3,6 +3,7 @@ package com.zhoutc.springmvc.aes;
 
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.SystemUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,8 +12,8 @@ import java.util.List;
  * Created by zhoutc on 2016/6/14.
  */
 public class TestString {
-    public static void main(String[] args) {
-        encodeAes();
+    public static void main(String[] args) throws  Exception{
+      /*  encodeAes();
 
         List a = new ArrayList();
         a.add("1");
@@ -20,7 +21,10 @@ public class TestString {
         a.add("edd");
         a.add("dad");
 
-        System.out.println(StringUtils.join(a, ""));
+        System.out.println(StringUtils.join(a, ""));*/
+        //MauthUtil.decode("6f6b73f45fa06ee4d9541edefe4313ab1f5d098c45ee8252465c169b21a39617");
+        System.out.println(        MauthUtil.encode(System.currentTimeMillis()+":"+"43769"));
+
     }
 
     public static void decodeAes()  {

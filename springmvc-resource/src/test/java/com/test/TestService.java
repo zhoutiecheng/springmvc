@@ -1,6 +1,7 @@
 package com.test;
 
 import com.zhoutc.springmvc.api.TestApi;
+import com.zhoutc.springmvc.api.UserService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
@@ -17,10 +18,12 @@ import javax.annotation.Resource;
 public class TestService {
     @Resource(name="testapi1")
     private TestApi testApi;
+    @Resource
+    private UserService userService;
 
     @Test   //标明是测试方法
     public void insert() {
-        testApi.sayHello();
+        userService.test();
     }
 
 
